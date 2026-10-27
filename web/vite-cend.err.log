@@ -1,0 +1,20 @@
+23:12:38 [vite] http proxy error: /api/v1/player/url?songId=1000000000000005029&quality=high
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:12:38 [vite] http proxy error: /api/v1/player/url?songId=1000000000000005029&quality=high
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:12:39 [vite] http proxy error: /api/v1/player/url?songId=1000000000000005029&quality=high
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:12:40 [vite] http proxy error: /api/v1/auth/login
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:12:42 [vite] http proxy error: /api/v1/player/url?songId=1000000000000005029&quality=high
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)

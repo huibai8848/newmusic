@@ -1,0 +1,137 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "char_filter": {
+        "music_normalize": {
+          "type": "mapping",
+          "mappings": [
+            "， => ,",
+            "。 => .",
+            "！ => !",
+            "？ => ?",
+            "； => ;",
+            "： => :",
+            "（ => (",
+            "） => )",
+            "【 => [",
+            "】 => ]",
+            "“ => \"",
+            "” => \"",
+            "‘ => '",
+            "’ => '",
+            "　 =>  "
+          ]
+        }
+      },
+      "filter": {
+        "cjk_bigram_uni": {
+          "type": "cjk_bigram",
+          "output_unigrams": true
+        },
+        "pinyin_edge": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20
+        }
+      },
+      "analyzer": {
+        "index_analyzer_music": {
+          "type": "custom",
+          "char_filter": ["music_normalize"],
+          "tokenizer": "standard",
+          "filter": ["lowercase", "cjk_bigram_uni"]
+        },
+        "search_analyzer_music": {
+          "type": "custom",
+          "char_filter": ["music_normalize"],
+          "tokenizer": "standard",
+          "filter": ["lowercase", "cjk_bigram_uni"]
+        },
+        "pinyin_index_music": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "pinyin_edge"]
+        },
+        "pinyin_search_music": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "_meta": {
+      "schemaVersion": 4,
+      "note": "lite = 无 IK/拼音/繁简插件；中文用 cjk_bigram(含单字)，拼音由应用侧 pinyin4j 物化后按 edge_ngram 索引"
+    },
+    "dynamic": false,
+    "properties": {
+      "id": {"type": "long"},
+      "docType": {"type": "keyword"},
+      "name": {
+        "type": "text",
+        "analyzer": "index_analyzer_music",
+        "search_analyzer": "search_analyzer_music",
+        "fields": {
+          "raw": {"type": "keyword", "ignore_above": 256}
+        }
+      },
+      "namePinyin": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "namePinyinFirst": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "artistId": {"type": "long"},
+      "artistName": {
+        "type": "text",
+        "analyzer": "index_analyzer_music",
+        "search_analyzer": "search_analyzer_music",
+        "fields": {
+          "raw": {"type": "keyword", "ignore_above": 256}
+        }
+      },
+      "artistNamePinyin": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "artistNamePinyinFirst": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "albumId": {"type": "long"},
+      "albumName": {
+        "type": "text",
+        "analyzer": "index_analyzer_music",
+        "search_analyzer": "search_analyzer_music"
+      },
+      "albumNamePinyin": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "alias": {"type": "text", "analyzer": "index_analyzer_music", "search_analyzer": "search_analyzer_music"},
+      "cover": {"type": "keyword", "index": false},
+      "language": {"type": "keyword"},
+      "genre": {"type": "keyword"},
+      "era": {"type": "keyword"},
+      "duration": {"type": "integer"},
+      "hotScore": {"type": "integer"},
+      "copyrightStatus": {"type": "integer"},
+      "songCount": {"type": "integer"},
+      "playCount": {"type": "long"},
+      "publishTime": {"type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss||epoch_millis"},
+      "tags": {"type": "text", "analyzer": "index_analyzer_music", "search_analyzer": "search_analyzer_music"},
+      "lyric": {"type": "text", "analyzer": "index_analyzer_music", "search_analyzer": "search_analyzer_music"}
+    }
+  }
+}

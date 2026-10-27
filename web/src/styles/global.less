@@ -1,0 +1,84 @@
+@import './variables.less';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg-layout);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  overflow-x: hidden; /* AC-11-202：1280~2560px 不允许横向滚动 */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 内容容器：xxl 断点下最大 1440px 居中（PRD §6.1） */
+.ml-container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.ml-page {
+  padding: 24px 0 32px;
+}
+
+/* 区块标题 */
+.ml-section {
+  margin-bottom: 32px;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  &__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  &__more {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+}
+
+/* 搜索结果关键词高亮（BR-11-022） */
+.ml-kw {
+  color: var(--color-highlight);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* 封面占位：无图时不显示破图 */
+.ml-cover {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--color-bg-elevated);
+  display: block;
+}
+
+/* 播放器占位高度，避免内容被底部播放条遮挡 */
+.ml-main {
+  min-height: calc(100vh - var(--header-height) - var(--player-height));
+  padding-bottom: var(--player-height);
+}

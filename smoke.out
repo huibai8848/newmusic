@@ -1,0 +1,101 @@
+﻿等待应用启动 就绪
+
+[36m00 服务可用性[0m
+  [32m✓[0m actuator/health 可匿名访问且状态 UP
+  [32m✓[0m actuator/health 不泄漏细节（show-details=never）
+  [32m✓[0m 未暴露的 actuator 端点不可访问
+
+[36m01 鉴权与登录（AC: 用户域）[0m
+  [32m✓[0m admin 登录成功
+  [32m✓[0m 返回 accessToken / refreshToken
+  [32m✓[0m 登录响应携带 traceId
+  [32m✓[0m 响应头 X-Trace-Id 与响应体 traceId 一致
+  [32m✓[0m 用户 ID 序列化为字符串（AC-10-104）
+  [32m✓[0m admin 持有 music:song:create 权限
+  [32m✓[0m demo 登录成功且仅有 ROLE_USER
+  [32m✓[0m demo 不携带任何后台权限码（ROLE_USER 无权限点）
+  [32m✓[0m operator 拥有 music:song:create 但无 music:song:delete
+  [32m✓[0m 资源级通配 music:artist:* 已展开为具体动作码
+  [32m✓[0m 密码错误返回 20001 且 HTTP 200
+  [32m✓[0m GET /users/me 返回本人资料
+  [32m✓[0m 未登录访问 /users/me 返回 401/40101
+
+[36m02 分页/排序/模糊查询（AC-10-001）[0m
+  [32m✓[0m pageSize=999 被截断为 100（AC-10-001-1）
+  [32m✓[0m 列表 ID 为字符串（AC-10-104）
+  [32m✓[0m 列表不返回已删除数据（AC-10-001-5 前置）
+  [32m✓[0m 非法 sortBy 回退默认排序且不报错（AC-10-001-2）
+  [32m✓[0m 注入尝试后 t_song 仍可查询
+  [32m✓[0m keyword=% 按字面匹配（转义生效，AC-10-001-4）
+  [32m✓[0m keyword=晴天 命中歌曲
+  [32m✓[0m sortBy=hotScore 按白名单排序生效
+  [32m✓[0m tagId 子查询筛选可用
+  [32m✓[0m 歌曲详情可读
+  [32m✓[0m 详情不含内部字段 deleted/createBy/updateBy（AC-10-002-2）
+  [32m✓[0m 详情返回 version 供乐观锁回传
+  [32m✓[0m 不存在的歌曲返回 30001 且无堆栈（AC-05-006）
+
+[36m03 权限控制（@PreAuthorize）[0m
+  [32m✓[0m demo 新增歌曲被拒（HTTP 403 / 40301）
+  [32m✓[0m 匿名写入返回 401 / 40101
+
+[36m04 曲库 CRUD + 乐观锁（AC-10-100 / AC-10-004）[0m
+  [32m✓[0m 新增歌手返回字符串 ID
+  [32m✓[0m 新增歌手可查（version=0）
+  [32m✓[0m 缺少 version 的更新被拒（10001）
+  [32m✓[0m 带正确 version 的更新成功
+  [32m✓[0m 更新后 version 自增为 1
+  [32m✓[0m 过期 version 返回 10008（AC-10-004-1）
+  [32m✓[0m 删除歌手成功
+  [32m✓[0m 删除后详情不可见（AC-10-001-5）
+  [32m✓[0m 重复删除返回 30041（记录已不可见，不再报错 500）
+
+[36m05 歌曲/歌词/标签级联[0m
+  [32m✓[0m 新增歌曲（含标签、直接上架）
+  [32m✓[0m 冗余字段 artistName/albumName 已回填
+  [32m✓[0m 歌曲标签绑定成功（2 个）
+  [32m✓[0m 无标准音质不可上架（BR-04-002 / 30043）
+  [32m✓[0m 新增歌词成功
+  [32m✓[0m 同曲重复新增歌词返回 10010
+  [32m✓[0m 按 songId 取歌词命中
+  [32m✓[0m 歌词偏移超限被拒（10001）
+  [32m✓[0m 删除歌曲成功
+  [32m✓[0m 删除歌曲后标签关联被清理
+  [32m✓[0m 删除歌曲后歌词被级联删除
+
+[36m06 歌单与歌单歌曲（AC-10-100 / BR-04-010~012）[0m
+  [32m✓[0m 匿名访问他人私密歌单返回 30004
+  [32m✓[0m 创建者可见私密歌单，歌曲按 sort_order 返回
+  [32m✓[0m 创建歌单成功（默认用户歌单）
+  [32m✓[0m 加歌 2 首
+  [32m✓[0m 重复加歌幂等返回 0（BR-04-011）
+  [32m✓[0m 歌单详情 songCount=2 且歌曲有序
+  [32m✓[0m 重排成功
+  [32m✓[0m 重排后顺序已变更（BR-04-012）
+  [32m✓[0m 单次加歌 >500 返回 10001（@Size 校验）
+  [32m✓[0m demo 修改系统歌单被拒（30005 / HTTP 403）
+  [32m✓[0m 移歌 1 首
+  [32m✓[0m 移歌后 songCount=1
+  [32m✓[0m 删除歌单成功
+  [32m✓[0m 删除后歌单不可见（30004）
+
+[36m07 前后台可见性差异[0m
+  [32m✓[0m 管理员可按 status 过滤（含下架）
+  [32m✓[0m 游客传 status 被忽略：列表非空且仅含已上架+审核通过
+
+────────────────────────────────────────────────────────────────
+通过 67 项，失败 0 项
+
+需人工 SQL 校验的项：
+  AC-10-005-1 逻辑删除后物理行仍存在：
+  SELECT id, name, deleted FROM t_song WHERE name LIKE '冒烟歌曲%';  -- deleted=1
+  冗余计数一致性（以下每条**只列不一致的行**，返回 0 行即通过）：
+  SELECT a.name, a.song_count, (SELECT COUNT(*) FROM t_song s WHERE s.artist_id=a.id AND s.deleted=0) c
+    FROM t_artist a WHERE a.deleted=0
+    AND a.song_count <> (SELECT COUNT(*) FROM t_song s WHERE s.artist_id=a.id AND s.deleted=0);
+  SELECT t.name, t.use_count, (SELECT COUNT(*) FROM t_song_tag st WHERE st.tag_id=t.id) c
+    FROM t_tag t WHERE t.deleted=0
+    AND t.use_count <> (SELECT COUNT(*) FROM t_song_tag st WHERE st.tag_id=t.id);
+  SELECT p.name, p.song_count, (SELECT COUNT(*) FROM t_playlist_song ps WHERE ps.playlist_id=p.id) c
+    FROM t_playlist p WHERE p.deleted=0
+    AND p.song_count <> (SELECT COUNT(*) FROM t_playlist_song ps WHERE ps.playlist_id=p.id);

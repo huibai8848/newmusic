@@ -1,0 +1,220 @@
+.searchBar {
+  max-width: 640px;
+  margin: 0 auto 8px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}
+
+.artistGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+
+/* ---------------- 联想下拉 ---------------- */
+
+.suggestItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* antd 的 AutoComplete 选项默认不换行，长歌词片段会把下拉撑破 */
+  min-width: 0;
+}
+
+.suggestText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestExtra {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ---------------- 筛选栏 ---------------- */
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.filterSelect {
+  min-width: 132px;
+  max-width: 260px;
+}
+
+.sortSelect {
+  min-width: 132px;
+}
+
+.filterHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.tabs {
+  margin-top: 4px;
+}
+
+/* ---------------- 综合 Tab 的分段 ---------------- */
+
+.segment {
+  margin-bottom: 28px;
+}
+
+.segmentHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.segmentTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.segmentCount {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.boardIcon {
+  color: var(--color-primary, #1677ff);
+}
+
+.notice {
+  margin-bottom: 12px;
+}
+
+.cost {
+  margin-top: 16px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ---------------- 热搜榜 / 搜索历史 ---------------- */
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 720px;
+  margin: 24px auto 0;
+}
+
+.board {
+  width: 100%;
+}
+
+.hotList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hotItem {
+  min-width: 0;
+}
+
+.hotWord {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hotWord:hover {
+  background: var(--color-fill-quaternary, rgb(0 0 0 / 4%));
+}
+
+.hotRank {
+  flex: 0 0 auto;
+  width: 20px;
+  text-align: center;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.hotRankTop {
+  color: #d4380d;
+  font-weight: 700;
+}
+
+.hotText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.historyItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-fill-quaternary, rgb(0 0 0 / 4%));
+}
+
+.historyWord {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.historyRemove {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.historyRemove:hover {
+  color: var(--color-text);
+}

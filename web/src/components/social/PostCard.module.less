@@ -1,0 +1,268 @@
+.card {
+  padding: 16px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.detail {
+  padding: 24px;
+}
+
+.head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.headBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nickname {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.nickname:hover {
+  color: var(--color-primary);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.timeLink {
+  color: var(--color-text-secondary);
+}
+
+.timeLink:hover {
+  color: var(--color-primary);
+}
+
+.ipRegion {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.content {
+  margin-top: 10px;
+  color: var(--color-text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+}
+
+.detail .content {
+  font-size: 15px;
+}
+
+.mention {
+  color: var(--color-primary);
+}
+
+.images {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  max-width: 520px;
+}
+
+.singleImage {
+  grid-template-columns: minmax(0, 320px);
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.resources {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  max-width: 460px;
+}
+
+.unavailable {
+  opacity: 0.6;
+}
+
+.resourceCover,
+.resourceCoverPlaceholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: none;
+}
+
+.resourceCoverPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-layout);
+  color: var(--color-text-secondary);
+}
+
+.resourceBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.lyric {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-bg-elevated);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.topics {
+  margin-top: 10px;
+}
+
+.topic {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--color-primary);
+  background: rgba(22, 119, 255, 0.08);
+}
+
+.original {
+  display: block;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.original:hover {
+  border-color: var(--color-primary);
+}
+
+.originalHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.originalTime {
+  font-size: 12px;
+}
+
+.originalContent {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.originalImages {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.originalImages img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.originalImages span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.originalResource {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.originalDeleted {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.actions {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions :global(.ant-btn) {
+  color: var(--color-text-secondary);
+}
+
+.activeAction {
+  color: #eb2f96 !important;
+}
+
+.collectedAction {
+  color: #faad14 !important;
+}
+
+.views {
+  font-size: 12px;
+  flex: none;
+}

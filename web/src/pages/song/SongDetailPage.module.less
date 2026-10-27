@@ -1,0 +1,97 @@
+.head {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.info {
+  flex: 1 1 420px;
+  min-width: 280px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.panel {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+/* 模块 14：AI 情绪标注 */
+.emotionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.emotionLabel {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* 模块 14：歌词工具栏（展示模式 + 生成/反馈入口） */
+.lyricToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lyricActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.translationMeta {
+  font-size: 12px;
+}
+
+.lyric {
+  white-space: pre-wrap;
+  line-height: 2;
+  color: var(--color-text);
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.empty {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.similarGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}

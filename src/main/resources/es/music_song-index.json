@@ -1,0 +1,160 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "char_filter": {
+        "music_normalize": {
+          "type": "mapping",
+          "mappings": [
+            "， => ,",
+            "。 => .",
+            "！ => !",
+            "？ => ?",
+            "； => ;",
+            "： => :",
+            "（ => (",
+            "） => )",
+            "【 => [",
+            "】 => ]",
+            "“ => \"",
+            "” => \"",
+            "‘ => '",
+            "’ => '",
+            "　 =>  "
+          ]
+        }
+      },
+      "filter": {
+        "t2s": {
+          "type": "stconvert",
+          "convert_type": "t2s",
+          "keep_both": false
+        },
+        "pinyin_edge": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20
+        },
+        "pinyin": {
+          "type": "pinyin",
+          "keep_first_letter": true,
+          "keep_separate_first_letter": false,
+          "keep_full_pinyin": true,
+          "keep_joined_full_pinyin": true,
+          "none_chinese_pinyin_tokenize": false,
+          "limit_first_letter_length": 16,
+          "remove_duplicated_term": true
+        }
+      },
+      "analyzer": {
+        "index_analyzer_music": {
+          "type": "custom",
+          "char_filter": ["music_normalize"],
+          "tokenizer": "ik_max_word",
+          "filter": ["lowercase", "t2s"]
+        },
+        "search_analyzer_music": {
+          "type": "custom",
+          "char_filter": ["music_normalize"],
+          "tokenizer": "ik_smart",
+          "filter": ["lowercase", "t2s"]
+        },
+        "pinyin_analyzer": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": ["pinyin"]
+        },
+        "pinyin_index_music": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "pinyin_edge"]
+        },
+        "pinyin_search_music": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "_meta": {
+      "schemaVersion": 4,
+      "note": "full = IK + 拼音 + 繁简插件；namePinyin* 由应用侧物化，插件缺失时改用 lite 映射"
+    },
+    "dynamic": false,
+    "properties": {
+      "id": {"type": "long"},
+      "docType": {"type": "keyword"},
+      "name": {
+        "type": "text",
+        "analyzer": "index_analyzer_music",
+        "search_analyzer": "search_analyzer_music",
+        "fields": {
+          "raw": {"type": "keyword", "ignore_above": 256},
+          "pinyin": {"type": "text", "analyzer": "pinyin_analyzer"},
+          "pinyin_first": {"type": "text", "analyzer": "pinyin_analyzer"}
+        }
+      },
+      "namePinyin": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "namePinyinFirst": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "artistId": {"type": "long"},
+      "artistName": {
+        "type": "text",
+        "analyzer": "index_analyzer_music",
+        "search_analyzer": "search_analyzer_music",
+        "fields": {
+          "raw": {"type": "keyword", "ignore_above": 256},
+          "pinyin": {"type": "text", "analyzer": "pinyin_analyzer"}
+        }
+      },
+      "artistNamePinyin": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "artistNamePinyinFirst": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "albumId": {"type": "long"},
+      "albumName": {
+        "type": "text",
+        "analyzer": "index_analyzer_music",
+        "search_analyzer": "search_analyzer_music",
+        "fields": {
+          "raw": {"type": "keyword", "ignore_above": 256},
+          "pinyin": {"type": "text", "analyzer": "pinyin_analyzer"}
+        }
+      },
+      "albumNamePinyin": {
+        "type": "text",
+        "analyzer": "pinyin_index_music",
+        "search_analyzer": "pinyin_search_music"
+      },
+      "alias": {"type": "text", "analyzer": "index_analyzer_music", "search_analyzer": "search_analyzer_music"},
+      "cover": {"type": "keyword", "index": false},
+      "language": {"type": "keyword"},
+      "genre": {"type": "keyword"},
+      "era": {"type": "keyword"},
+      "duration": {"type": "integer"},
+      "hotScore": {"type": "integer"},
+      "copyrightStatus": {"type": "integer"},
+      "songCount": {"type": "integer"},
+      "playCount": {"type": "long"},
+      "publishTime": {"type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss||epoch_millis"},
+      "tags": {"type": "text", "analyzer": "index_analyzer_music", "search_analyzer": "search_analyzer_music"},
+      "lyric": {"type": "text", "analyzer": "index_analyzer_music", "search_analyzer": "search_analyzer_music"}
+    }
+  }
+}

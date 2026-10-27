@@ -1,0 +1,24 @@
+
+> newmusic-web@0.1.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 358 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+21:12:22 [vite] hmr update /src/components/common/ErrorState.tsx, /src/main.tsx, /src/components/common/NotificationBell.tsx, /src/components/player/AudioEngine.tsx, /src/router/guard.tsx, /src/layouts/MainLayout.tsx, /src/layouts/AdminLayout.tsx, /src/pages/login/LoginPage.tsx, /src/pages/home/HomePage.tsx, /src/components/player/PlayerBar.tsx, /src/components/player/QueueDrawer.tsx, /src/components/player/PlayerHotkeyHelp.tsx, /src/components/player/PlayingPage.tsx, /src/components/player/LyricPanel.tsx, /src/components/business/SongCard.tsx, /src/components/business/RecommendSongCard.tsx, /src/components/recommend/ContinuePlayList.tsx, /src/components/business/FeedbackMenu.tsx
+21:12:22 [vite] hmr update /src/components/common/ErrorState.tsx, /src/main.tsx, /src/components/common/NotificationBell.tsx, /src/components/player/AudioEngine.tsx, /src/router/guard.tsx, /src/layouts/MainLayout.tsx, /src/layouts/AdminLayout.tsx, /src/pages/login/LoginPage.tsx, /src/pages/home/HomePage.tsx, /src/components/player/PlayerBar.tsx, /src/components/player/QueueDrawer.tsx, /src/components/player/PlayerHotkeyHelp.tsx, /src/components/player/PlayingPage.tsx, /src/components/player/LyricPanel.tsx, /src/components/business/SongCard.tsx, /src/components/business/RecommendSongCard.tsx, /src/components/recommend/ContinuePlayList.tsx, /src/components/business/FeedbackMenu.tsx
+21:12:58 [vite] hmr update /src/main.tsx, /src/components/common/NotificationBell.tsx
+21:12:58 [vite] hmr update /src/main.tsx, /src/components/common/NotificationBell.tsx
+21:14:02 [vite] hmr update /src/router/index.tsx
+21:14:03 [vite] hmr update /src/router/index.tsx
+21:14:06 [vite] hmr update /src/layouts/MainLayout.tsx
+21:14:07 [vite] hmr update /src/layouts/MainLayout.tsx
+21:14:07 [vite] hmr update /src/layouts/MainLayout.tsx
+21:14:07 [vite] hmr update /src/layouts/MainLayout.tsx
+21:14:08 [vite] hmr update /src/layouts/MainLayout.tsx
+21:14:10 [vite] hmr update /src/components/common/NotificationBell.tsx
+21:14:10 [vite] hmr update /src/components/common/NotificationBell.tsx
+21:14:11 [vite] hmr update /src/components/common/NotificationBell.tsx
+21:14:13 [vite] hmr update /src/components/common/NotificationBell.tsx

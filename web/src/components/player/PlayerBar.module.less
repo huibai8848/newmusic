@@ -1,0 +1,168 @@
+@import '../../styles/variables.less';
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--player-height);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  z-index: 100;
+}
+
+.song {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 280px;
+  min-width: 200px;
+  flex: 0 0 auto;
+}
+
+/* 封面做成按钮：点它展开全屏播放页（模块 07 T713） */
+.coverButton {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex: 0 0 auto;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* 悬停时盖一层半透明遮罩 + 展开图标，暗示"这里可以点开" */
+  &:hover .coverHover {
+    opacity: 1;
+  }
+}
+
+.coverHover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.songMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.songName {
+  color: var(--color-text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.songArtist {
+  font-size: 12px;
+  max-width: 220px;
+}
+
+.center {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 640px;
+}
+
+.slider {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.time {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+}
+
+.volumeSlider {
+  width: 80px;
+  margin: 0;
+}
+
+/* 窄屏（PRD §6.1 md 断点）隐藏次要控件，保证 1280px 不横向滚动 */
+@media (max-width: 992px) {
+  .song {
+    width: 180px;
+  }
+
+  .volume {
+    display: none;
+  }
+}
+
+/* 三档响应式（模块 07 T713）：更窄时连音质选择也收起，进度条仍要留着 */
+@media (max-width: 768px) {
+  .song {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .right {
+    gap: 4px;
+  }
+
+  .right :global(.ant-select) {
+    display: none;
+  }
+
+  .progress {
+    max-width: none;
+  }
+}

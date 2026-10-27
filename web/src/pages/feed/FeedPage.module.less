@@ -1,0 +1,90 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.main {
+  min-width: 0;
+}
+
+.side {
+  position: sticky;
+  top: calc(var(--header-height) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.tabsRow :global(.ant-tabs-nav) {
+  margin-bottom: 0;
+}
+
+.newBanner {
+  margin-bottom: 12px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.topicList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topicRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  color: var(--color-text);
+}
+
+.topicRow:hover {
+  background: var(--color-bg-elevated);
+}
+
+.topicRank {
+  width: 18px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex: none;
+}
+
+.topicName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topicCount {
+  font-size: 12px;
+  flex: none;
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .side {
+    position: static;
+  }
+}

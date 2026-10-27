@@ -1,0 +1,19 @@
+
+> newmusic-web-admin@0.1.0 dev
+> vite
+
+
+  VITE v5.4.21  ready in 389 ms
+
+  ➜  Local:   http://localhost:5174/
+  ➜  Network: use --host to expose
+23:14:29 [vite] hmr update /src/auth/AuthContext.tsx, /src/pages/LoginPage.tsx, /src/pages/DashboardPage.tsx, /src/layouts/AdminLayout.tsx, /src/pages/AlbumsPage.tsx, /src/pages/ArtistsPage.tsx, /src/pages/UsersPage.tsx, /src/pages/SongsPage.tsx, /src/pages/ConfigsPage.tsx, /src/pages/AuditsPage.tsx, /src/pages/ReportsPage.tsx, /src/pages/LogsPage.tsx, /src/pages/AccountsPage.tsx, /src/pages/RoomsPage.tsx
+23:14:29 [vite] hmr invalidate /src/auth/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
+23:14:29 [vite] page reload src/auth/AuthContext.tsx
+23:14:32 [vite] hmr update /src/auth/AuthContext.tsx, /src/pages/LoginPage.tsx, /src/pages/DashboardPage.tsx, /src/layouts/AdminLayout.tsx, /src/pages/AlbumsPage.tsx, /src/pages/ArtistsPage.tsx, /src/pages/UsersPage.tsx, /src/pages/SongsPage.tsx, /src/pages/ConfigsPage.tsx, /src/pages/AuditsPage.tsx, /src/pages/ReportsPage.tsx, /src/pages/LogsPage.tsx, /src/pages/AccountsPage.tsx, /src/pages/RoomsPage.tsx
+23:14:32 [vite] hmr invalidate /src/auth/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
+23:14:32 [vite] page reload src/auth/AuthContext.tsx
+23:15:14 [vite] hmr update /src/App.tsx
+23:15:15 [vite] hmr update /src/App.tsx
+23:15:16 [vite] hmr update /src/layouts/AdminLayout.tsx
+23:15:16 [vite] hmr update /src/layouts/AdminLayout.tsx

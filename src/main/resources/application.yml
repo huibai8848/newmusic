@@ -1,0 +1,480 @@
+# ==========================================================================
+# MusicLive 应用配置（模块 01 交付）
+# 端口：8081（D-07：本机 8080 被 steamwebhelper 占用）
+# 数据库：MySQL 8 / newmusic；密码通过环境变量 MYSQL_PASSWORD 注入，禁止提交真实密码
+# ==========================================================================
+server:
+  port: 8081
+  # 模块19：优雅停机。先停止接收新请求，等在途请求与 WS 通知完成后再退出
+  shutdown: graceful
+  tomcat:
+    uri-encoding: UTF-8
+    threads:
+      max: 200
+      min-spare: 10
+
+spring:
+  application:
+    name: newmusic
+  main:
+    banner-mode: console
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  jackson:
+    time-zone: Asia/Shanghai
+  mvc:
+    # Springfox 3.0.0（Knife4j 3.0.3）在 Boot 2.6 下的必需项，缺失会导致启动失败
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/newmusic?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: root
+    # 不提供默认值：本机 root 密码不是 "root"。缺少环境变量时直接报
+    # "Could not resolve placeholder 'MYSQL_PASSWORD'"，比用错误密码连库后
+    # 抛出 1045 / DruidDataSource 初始化失败的连锁异常更好定位。
+    # 启动前设置：PowerShell `$env:MYSQL_PASSWORD='...'`，或 IDE Run Configuration 的
+    # Environment variables；禁止把真实密码写进本文件或提交到仓库。
+    password: ${MYSQL_PASSWORD}
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filters: stat,wall
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=1000
+      stat-view-servlet:
+        enabled: false
+  servlet:
+    multipart:
+      # 音频单文件上限 50MB（AdminFileController.MAX_AUDIO 与脚本 --max-size 默认值同步）
+      max-file-size: 50MB
+      max-request-size: 60MB
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.example.newmusic.module.**.entity
+  global-config:
+    banner: false
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      insert-strategy: not_null
+      update-strategy: not_null
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    # 开发期打印 SQL；生产建议改为 NoLoggingImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  private-key-location: classpath:jwt/private_key.pem
+  public-key-location: classpath:jwt/public_key.pem
+  issuer: newmusic
+  access-token-ttl: 1800      # 30 分钟
+  refresh-token-ttl: 604800   # 7 天
+
+newmusic:
+  # -------------------------------------------------------------------------
+  # 模块 03：缓存与并发控制的基础设施配置
+  #
+  # Redis 连接参数**只此一处**：本项目的 Redis 客户端只有 Redisson（见
+  # infra/redis/RedisConfig），故不写 spring.redis.*，避免两个配置源打架。
+  #
+  # 本机 6379 是共享实例，db0 里躺着另一个项目的 ranking:* 键（日期停在 2026-07）。
+  # 因此所有 key 一律带 ml: 前缀，代码中禁止 FLUSHDB/FLUSHALL（系分 D-18）。
+  # -------------------------------------------------------------------------
+  infra:
+    redis:
+      # single | cluster —— 生产切集群只改这一行，业务代码零改动（系分 D-17）
+      mode: single
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      # mode=cluster 时生效
+      nodes:
+        - redis://127.0.0.1:7000
+      # 快速失败：Redis 故障时请求不能卡在这里（AC-12-001-4 要求 ≤200ms）
+      timeout-millis: 1000
+      connect-timeout-millis: 1000
+      retry-attempts: 1
+      retry-interval-millis: 100
+      connection-pool-size: 32
+      connection-minimum-idle-size: 4
+    cache:
+      song-ttl-seconds: 1800      # 歌曲详情 30 分钟（PRD FR-12-001）
+      null-ttl-seconds: 60        # 空值缓存 1 分钟，防穿透（BR-12-004）
+      ttl-jitter-ratio: 0.1       # TTL 抖动 +0~10%，防雪崩（BR-12-003 / 系分 D-30）
+      local-ttl-seconds: 30       # L1 Caffeine 存活时间
+      local-max-size: 10000
+      bloom:
+        enabled: true             # 布隆过滤器前置过滤（FR-12-009 9.1）
+        expected-insertions: 10000000
+        false-probability: 0.01
+    lock:
+      wait-seconds: 2             # 获取锁最长等待（FR-12-006：必须显式指定）
+      lease-seconds: 5            # 持有上限，避免宕机后死锁
+    guard:
+      # 熔断守卫：连续失败 3 次即打开 5 秒，打开期间 Redis 操作直接短路。
+      # 没有它，Redis 挂掉时每个请求都要付一次连接超时代价（系分 D-20）。
+      failure-threshold: 3
+      open-millis: 5000
+    limit:
+      # IP 白名单（内网/压测机豁免，BR-12-027）。默认空：把 127.0.0.1 加白会让
+      # 本机冒烟永远验证不到限流——测试恰好从本机发起（系分 D-22）。
+      whitelist: ${RATE_LIMIT_WHITELIST:}
+
+  # 模块 07：播放与歌词
+  media:
+    # 演示音频/封面目录，相对后端进程工作目录（即仓库根）。用 scripts/make-demo-audio.mjs 生成
+    dir: ./media
+  play:
+    # 播放地址签名密钥；生产必须用环境变量覆盖（PRD BR-16-010）
+    sign-secret: ${PLAY_SIGN_SECRET:newmusic-demo-secret-change-me}
+    # 地址有效期（秒）：2 小时，与 PRD BR-16-010 一致
+    url-ttl-seconds: 7200
+    # 置空 → 返回相对路径（/media/demo/xx.wav）；配成 https://cdn.xxx → 返回绝对 URL
+    cdn-base: ""
+
+  # ---------------------------------------------------------------------------
+  # 模块 08：AI 推荐
+  #
+  # 本机没有 Milvus / 向量检索服务（PRD 17 §3 的前置条件之一），所以采用
+  # 「内容标签 + 热度 + 协同共现」的 MySQL/Redis 可执行版：
+  #   * 相似歌曲用标签/流派/语种/BPM/年代加权，离线写入 t_song_similar；
+  #   * 猜你喜欢用最近行为的内容画像 + 共现召回，在线计算 + 30 分钟缓存。
+  # 装好向量库后替换 SimilarRecommendService / GuessRecommendService 的召回段即可。
+  # ---------------------------------------------------------------------------
+  recommend:
+    daily-size: 30              # BR-17-001
+    guess-size: 20              # BR-17-025
+    guess-cache-size: 100       # 一次算 5 页，滚动加载更多
+    similar-size: 20            # BR-17-031
+    newcomer-size: 20
+    daily-cache-hours: 48       # BR-17-009
+    guess-cache-minutes: 30     # BR-17-023
+    newcomer-cache-minutes: 60
+    frequent-cache-minutes: 60
+    similar-cache-days: 7       # BR-17-036
+    max-artist-per-list: 2      # BR-17-007 / BR-17-027 / BR-17-033
+    max-album-per-list: 1       # BR-17-027
+    disliked-song-limit: 200    # BR-17-022
+    disliked-artist-limit: 50   # BR-17-022
+    exploration-ratio: 0.10     # BR-17-050
+    cold-start-ratio: 0.50      # BR-17-048
+    cold-start-behavior-threshold: 5
+    recent-play-limit: 500      # BR-16-026
+    valid-play-seconds: 30      # 有效播放判定
+    valid-play-ratio: 0.6
+    similar-precompute-cron: "0 30 3 * * ?"
+    daily-prewarm-cron: "0 10 0 * * ?"
+    prewarm-user-limit: 1000
+
+  # ---------------------------------------------------------------------------
+  # 模块 15：推荐系统升级
+  #
+  # 这里的值是「进程级」默认值；每个场景的权重、算子链、实验参数在 t_rec_config，
+  # 后台修改后最多 10 秒（Redis 失效）生效，不需要重启。
+  # ---------------------------------------------------------------------------
+  rec-upgrade:
+    recall-deadline-ms: 150       # BR-24-003
+    source-default-timeout-ms: 100
+    recall-source-limit: 300
+    fusion-top-n: 500             # BR-24-023
+    coarse-target: 150            # BR-24-026
+    fine-rank-timeout-ms: 80
+    rerank-timeout-ms: 30
+    final-size: 30
+    max-request-size: 100
+    feature-deadline-ms: 20       # BR-24-047
+    feature-user-ttl-hours: 25
+    feature-song-ttl-minutes: 10
+    model-reload-seconds: 30
+    experiment-min-sample: 10000  # BR-24-083
+    experiment-cache-seconds: 30
+    log-retention-days: 7
+    new-song-days: 7
+    new-song-daily-cap: 50        # BR-24-063
+    new-song-exposure-target: 1000
+    new-song-completion-threshold: 0.30
+    new-song-user-exposure-limit: 2
+    explore-ratio: 0.10
+    explore-start-position: 8
+    evaluate-max-users: 500
+    evaluate-train-days: 6
+    jobs-enabled: true
+    daily-aggregate-cron: "0 20 0 * * ?"
+    log-cleanup-cron: "0 40 4 * * ?"
+    new-song-evaluate-cron: "0 0/10 * * * ?"
+    feature-check-cron: "0 10 5 * * ?"
+
+  # ---------------------------------------------------------------------------
+  # 模块 04：WebSocket 实时通信
+  #
+  # 本机没有 RocketMQ Broker（PRD 03 的依赖白名单里有，但没装），跨实例广播先由
+  # Redis Pub/Sub 承载（系分 04 D-03）。WsClusterBus 是唯一出口，装好 MQ 后替换实现即可。
+  # ---------------------------------------------------------------------------
+  ws:
+    # 节点标识：留空则启动时随机生成。多实例部署必须显式设置且互不相同
+    node-id: ${WS_NODE_ID:}
+    # 握手 Origin 白名单（逗号分隔）。* 仅用于本机演示；生产必须列具体域名（PRD §4.2）
+    allowed-origins: ${WS_ALLOWED_ORIGINS:*}
+    # 心跳间隔：由 connected 帧下发给客户端（BR-13-006）
+    heartbeat-interval-seconds: 30
+    # 服务端超时判定（3 个心跳周期，BR-13-007）
+    idle-timeout-seconds: 90
+    # 单实例连接上限（EX-13-001-5）
+    max-connections: 10000
+    # 单 IP 连接上限（BR-13-003）
+    max-connections-per-ip: 20
+    # 单条消息上限（FR-13-008 §8.3）；超过直接断开（1009）
+    max-message-size: 65536
+    # 聊天/弹幕频率（BR-13-012 表）
+    chat-rate-per-minute: 20
+    danmaku-rate-per-minute: 10
+    # clientMsgId 幂等窗口（BR-13-035）
+    dedup-ttl-seconds: 300
+    # 会话映射 TTL，心跳时续期（BR-13-011 / PRD 12 章 key 表）
+    session-ttl-seconds: 90
+    # 节点负载登记 TTL，定时续期（PRD 12 章 key 表）
+    node-ttl-seconds: 60
+    # token 剩余有效期低于该值时下发 auth.expiring（PRD §4.3）
+    auth-expiring-seconds: 300
+    # 房间兜底 sync 周期（BR-13-024）
+    room-sync-interval-ms: 60000
+    # 演示开关：模块 05 尚未交付，唯一的房主/入房校验是「首个进房者成为房主」。
+    # 生产必须置 false——那会让 room.join 走 fail-closed（系分 04 D-05）。
+    demo-room-enabled: ${WS_DEMO_ROOM_ENABLED:true}
+
+  # ---------------------------------------------------------------------------
+  # 模块 06：搜索
+  #
+  # 默认引擎是 MySQL 实现；它同时就是 PRD BR-15-009 要求的「ES 不可用时降级为
+  # MySQL LIKE」那条路径本身，不是临时脚手架。本机已装 ES 9.5.5（HTTP + Basic Auth，
+  # 无 IK 插件），启用方式见 docs/ES-接入与启动指引.md：
+  #   DICT_ES_ENABLED=true  SEARCH_ENGINE=es  DICT_ES_USERNAME=elastic  DICT_ES_PASSWORD=***
+  # SearchService 以上的代码一行不用改。
+  # ---------------------------------------------------------------------------
+  search:
+    engine: ${SEARCH_ENGINE:mysql}
+
+    # BR-15-003 的口径开关（系分 06 D-42）。PRD 15 自相矛盾：ES 的 filter 说只返回
+    # copyright_status=1，同一句括注又说无版权歌曲要标记但可展示。默认服从可执行的
+    # filter；置 true 则无版权歌曲也进结果，带 playable=false 由前端置灰。
+    include-unplayable: ${SEARCH_INCLUDE_UNPLAYABLE:false}
+
+    suggest:
+      limit: 10                  # BR-15-015：联想上限 10 条
+      ttl-seconds: 3600          # BR-15-020：缓存 TTL 1 小时
+      prefix-length: 8           # BR-15-020：缓存键只取前 8 个字符
+
+    hot:
+      size: 10                   # BR-15-029：热搜榜 Top 10
+      snapshot-ttl-seconds: 300  # BR-15-032：展示快照每 5 分钟刷新
+      realtime-ttl-seconds: 172800  # 实时计数 ZSet 保留 2 天
+      last-ttl-seconds: 3600     # 上一份快照，用于算增速标记（BR-15-033）
+      dedup-seconds: 60          # EX-15-005-1：同人同词 1 分钟内只计一次
+      seen-ttl-seconds: 86400    # BR-15-033：「新」词的 24 小时判定窗口
+      top-max: 3                 # BR-15-030：运营置顶词最多 3 个
+      persist-cron: "0 5 * * * ?"   # BR-15-031：整点落库。错开整点避开其它定时任务
+      defaults:                  # EX-15-005-3：榜单为空时的兜底展示词
+        - 周杰伦
+        - 晴天
+        - 华语流行
+
+    history:
+      max: 20                    # BR-15-022：只保留最近 20 条
+      ttl-days: 30
+      enabled: ${SEARCH_HISTORY_ENABLED:true}
+
+    pinyin:
+      # 启动时把 name_pinyin IS NULL 的行补上（系分 06 D-35 / T611）。幂等、可重跑。
+      #
+      # 默认 true 是为了让「拉下代码就能搜拼音」这件事成立；**生产上跑完一次迁移后
+      # 应该置 false**，否则每次重启都会对存量数据做一遍全表等值查询
+      # （有 name_pinyin IS NULL 的索引可走，但千万级表上仍是一次不必要的启动开销）。
+      backfill-enabled: ${SEARCH_PINYIN_BACKFILL:true}
+
+    sensitive:
+      # 敏感词词典（逗号分隔）。真正的词库属模块 18（内容安全），此处**默认空 =
+      # 不拦任何词**，但代码路径、错误码、可观测性全部就位（系分 06 D-38）。
+      # 运行时可在 t_sys_config 里用键 search.sensitive.words 覆盖，支持热更新。
+      words: ${SEARCH_SENSITIVE_WORDS:}
+
+  # ---------------------------------------------------------------------------
+  # 模块 11：IK 分词与中文搜索优化
+  #
+  # ES 默认关闭（DICT_ES_ENABLED=false）。关闭时词典能力仍然可用：
+  #   * 主词典/停用词/同义词/繁简/多音字在应用层改写查询（DictQueryRewriter）；
+  #   * 词典后台的分词测试走本地最大匹配（LocalDictAnalyzer）；
+  #   * 搜索继续由 MySQL LIKE 兜底。
+  # 本机已装 ES 9.5.5（**未装 analysis-ik / pinyin / stconvert 插件**）：
+  #   设置 DICT_ES_ENABLED=true、SEARCH_ENGINE=es、DICT_ES_USERNAME/PASSWORD；
+  #   启动时会自动使用 lite mapping（cjk_bigram + 应用侧物化的拼音 edge_ngram），
+  #   无需要插件即可中文检索与拼音前缀检索。
+  # 若之后装了插件，重建索引会自动改用 full mapping；再把 IK 的 remote_ext_dict 指向
+  #   http://<host>:8081/api/v1/internal/dict/ik?type=main|stopword|synonym|pinyin
+  # ---------------------------------------------------------------------------
+  dict:
+    max-words: ${DICT_MAX_WORDS:100000}          # BR-20-008：主词典上限 10 万
+    max-stopwords: ${DICT_MAX_STOPWORDS:5000}    # BR-20-022
+    max-synonym-groups: ${DICT_MAX_SYNONYM_GROUPS:5000}  # BR-20-025
+    max-words-per-group: ${DICT_MAX_WORDS_PER_GROUP:20}
+    word-min-length: 2                           # BR-20-001：2~15 字
+    word-max-length: 15
+    snapshot-cache-seconds: 30
+    # 远程词典只允许这些来源。ES 与本服务同机时就是 127.0.0.1；容器化部署时
+    # 填 ES 所在网段的具体 IP（用 * 表示放行全部，仅限本地调试）
+    internal-ips: "${DICT_INTERNAL_IPS:127.0.0.1,0:0:0:0:0:0:0:1,::1}"
+    artist-sync-cron: "0 17 * * * ?"             # BR-20-007：每小时，错开整点
+
+    es:
+      enabled: ${DICT_ES_ENABLED:false}
+      url: ${DICT_ES_URL:http://127.0.0.1:9200}
+      username: ${DICT_ES_USERNAME:}
+      password: ${DICT_ES_PASSWORD:}
+      index-alias: ${DICT_ES_INDEX_ALIAS:music_song}
+      connect-timeout-ms: 2000
+      read-timeout-ms: 5000
+      analyze-index: ${DICT_ES_ANALYZE_INDEX:music_song}
+      # 启动时若别名不存在或 mapping 版本落后，自动全量重建（失败只告警，不阻塞启动）
+      auto-init: ${DICT_ES_AUTO_INIT:true}
+      # 与 es/music_song-index*.json 的 mappings._meta.schemaVersion 对应；改 mapping 时 +1
+      schema-version: ${DICT_ES_SCHEMA_VERSION:4}
+
+  # ---------------------------------------------------------------------------
+  # 模块 19：高可用与运维
+  #
+  # 本机没有 Prometheus / Grafana / SkyWalking / Sentinel / K8s / MQ / Redis Cluster /
+  # MySQL 从库，所以能力全部落在**应用层**：自建限流规则、熔断器、五级降级、指标
+  # （JSON + Prometheus 文本）、告警评估、trace 环形缓冲、逻辑备份清单、混沌注入。
+  # 运行期规则在数据库（改完 2~5 秒生效）；这里只放开进程级旋钮。
+  # ---------------------------------------------------------------------------
+  ops:
+    enabled: ${OPS_ENABLED:true}
+    # 启动自检：SQL 未执行时直接失败，避免限流/降级静默失效
+    startup-check-enabled: ${OPS_STARTUP_CHECK:true}
+    internal-ips: "${OPS_INTERNAL_IPS:127.0.0.1,0:0:0:0:0:0:0:1,::1}"
+    trace-buffer-size: 2000
+    trace-sample-rate: 0.1
+    rate-rule-refresh-seconds: 3
+    degrade-refresh-seconds: 2
+    local-fallback-enabled: true
+    slow-sql-warn-ms: 1000
+    slow-sql-block-ms: 5000
+    alert-eval-interval-ms: 5000
+    metrics-snapshot-interval-ms: 60000
+    # @Scheduled 读取的是毫秒值；上面的秒级字段给业务代码用
+    rule-refresh-interval-ms: 1000
+    degrade-refresh-interval-ms: 1000
+    alert-interval-ms: 5000
+    snapshot-interval-ms: 60000
+    # 混沌注入默认开启仅限本机演示；生产必须用环境变量关闭
+    chaos-enabled: ${OPS_CHAOS_ENABLED:true}
+    chaos-max-duration-seconds: 120
+    chaos-max-blast-radius: 100
+    ws-shutdown-pause-ms: 300
+    backup-dir: .tmp/backups
+    backup-retention-days: 7
+    circuit:
+      failure-rate-threshold: 0.5
+      minimum-calls: 10
+      open-seconds: 10
+      half-open-max-calls: 3
+
+  # ---------------------------------------------------------------------------
+  # 模块 17：数据平台
+  #
+  # 本机没有 Kafka/ClickHouse/Flink/HDFS（系分 17 的本地替代方案）：
+  #   * 采集：同步写 MySQL ODS（sync-persist=true），生产语义可切异步线程池；
+  #   * 实时指标：Redis HLL/INCR/ZSet/Hash；
+  #   * 分层：MySQL 的 ODS/DWD/DWS/ADS 四张表，按 dt 分区列 + 幂等重跑。
+  # 定时任务默认关闭，验收走后台手工触发；打开后按 ETL→画像→质量→对账→报表 顺序跑。
+  # ---------------------------------------------------------------------------
+  data-platform:
+    jobs-enabled: ${DATA_PLATFORM_JOBS:false}
+    sync-persist: ${DATA_PLATFORM_SYNC_PERSIST:true}
+    dedup-seconds: 300              # BR-26-004：event_id 5 分钟幂等
+    rate-limit-per-minute: 100      # EX-26-001-4：单设备 100 事件/分钟
+    batch-max: 200                  # 单批上限
+    max-props-bytes: 8192           # 属性 JSON 上限，超过进脏数据
+    new-user-days: 7                # BR-26-037
+    valid-play-seconds: 30          # BR-26-031
+    valid-play-ratio: 0.6
+    dau-play-threshold: 3
+    realtime-ttl-days: 7
+    funnel-max-rows: 200000
+    retention-days: 60
+    retention-max-rows: 300000
+    audience-min-precision: 100     # BR-26-044
+    audience-max-rows: 500000
+    profile-batch-users: 5000
+    profile-tag-version: "v"        # 实际版本 = v + yyyyMMdd
+    etl-cron: "0 20 0 * * ?"
+    profile-cron: "0 40 0 * * ?"
+    quality-cron: "0 10 1 * * ?"
+    reconciliation-cron: "0 40 1 * * ?"
+    report-cron: "0 0 7 * * ?"
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-footer: false
+    enable-open-api: true
+
+# 健康检查：只暴露 health —— SecurityConfig 的白名单里也只有这一个 actuator 路径。
+# 其余端点（loggers / heapdump / threaddump 等）一律不暴露，符合 NFR-S-058；
+# 它们要到 PRD 模块 19 才随运维需求开放，且必须走内网 + 鉴权。
+# 原先这里还开着 info，但 /actuator/info 不在 PermitAll 白名单里（匿名访问 401），
+# 且没有任何 info.* 属性可报，实际返回 {} —— 开着一个用不了的端点只会误导排查。
+management:
+  # 独立管理端口：actuator 的 WebMvcEndpointHandlerMapping 注册进主上下文时，
+  # 会触发 springfox 3.0.0（Knife4j 3.0.3）在 documentationPluginsBootstrapper 里
+  # NPE（PatternsRequestCondition 为 null）。放到子上下文后主上下文看不到它，
+  # 两边的 handler mapping 就互不干扰了。
+  server:
+    port: 8082
+    # 管理端口只给本机/边车抓取，不暴露到局域网
+    address: 127.0.0.1
+  endpoints:
+    web:
+      exposure:
+        # 模块19：health（存活/就绪）+ prometheus（自定义文本端点）
+        include: health,prometheus
+  endpoint:
+    health:
+      # 生产不要把数据库地址之类的细节吐给匿名请求
+      show-details: never
+      # 模块19：liveness 只包含进程自身状态，绝不查 DB/Redis；
+      # readiness 才检查依赖，DB 不可用才摘流量，Redis 断开只降级
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState,ping
+        readiness:
+          include: readinessState,db,ops
+  health:
+    probes:
+      enabled: true
+
+logging:
+  level:
+    root: info
+    com.example.newmusic: debug
+    com.alibaba.druid: warn
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"

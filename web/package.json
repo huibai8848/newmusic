@@ -1,0 +1,48 @@
+{
+  "name": "newmusic-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MusicLive 前端（模块 02 / 07）",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "icons:generate": "node scripts/generate-pwa-icons.mjs",
+    "test:lrc": "node scripts/test-lrc.mjs",
+    "test:search": "node scripts/test-search-url.mjs",
+    "test:playorder": "node scripts/test-playorder.mjs",
+    "test:ws": "node scripts/test-ws.mjs",
+    "test:playback": "node scripts/test-playback-policy.mjs",
+    "test:playability": "node scripts/test-playability.mjs",
+    "test:roomsync": "node scripts/test-room-sync.mjs",
+    "test:lyricai": "node scripts/test-lyric-ai.mjs",
+    "test:social": "node scripts/test-social.mjs",
+    "test:track": "node scripts/test-track.mjs",
+    "test:safety": "node scripts/test-safety.mjs",
+    "test:degrade": "node scripts/test-degrade.mjs",
+    "test": "node scripts/test-lrc.mjs && node scripts/test-search-url.mjs && node scripts/test-playorder.mjs && node scripts/test-ws.mjs && node scripts/test-playback-policy.mjs && node scripts/test-playability.mjs && node scripts/test-room-sync.mjs && node scripts/test-lyric-ai.mjs && node scripts/test-social.mjs && node scripts/test-track.mjs && node scripts/test-safety.mjs && node scripts/test-degrade.mjs"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.0",
+    "@tanstack/react-query": "^5.28.0",
+    "antd": "^5.16.0",
+    "axios": "^1.6.8",
+    "dayjs": "^1.11.10",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react-swc": "^3.6.0",
+    "less": "^4.2.0",
+    "typescript": "~5.3.3",
+    "vite": "^5.2.0",
+    "vite-plugin-pwa": "^2.0.0"
+  }
+}

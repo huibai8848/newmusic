@@ -1,0 +1,209 @@
+@import '../../styles/variables.less';
+
+/**
+ * 全屏播放页（模块 07 T708）。
+ *
+ * z-index 要高于播放条（100）与队列抽屉（1200 是 AntD Drawer 的默认值，
+ * 所以这里取 1100，让抽屉盖在全屏页之上——用户在全屏页里点"队列"仍然能拉开抽屉）。
+ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: var(--color-bg-layout);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 桌面：居中卡片；移动端占满视口（§5.5） */
+.card {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-border);
+  flex: 0 0 auto;
+}
+
+.headerHint {
+  font-size: 13px;
+}
+
+.collapse {
+  display: inline-flex;
+  align-items: center;
+}
+
+.body {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 40px;
+  padding: 32px 40px 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.cover {
+  box-shadow: var(--shadow-card);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.name {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.artist {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.right {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.footer {
+  flex: 0 0 auto;
+  padding: 8px 40px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 跨设备续播提示条：不自动跳转，给用户「继续 / 忽略」 */
+.remoteResume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  background: var(--color-bg-layout);
+  border: 1px solid var(--color-border);
+}
+
+.slider {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.time {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.leftControls,
+.rightControls {
+  flex: 1 1 0;
+}
+
+.rightControls {
+  justify-content: flex-end;
+}
+
+.centerControls {
+  flex: 0 0 auto;
+}
+
+/* 移动端：上下堆叠，封面缩小，歌词占剩余高度 */
+@media (max-width: 768px) {
+  .card {
+    max-width: none;
+  }
+
+  .body {
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px 16px 8px;
+    overflow-y: auto;
+  }
+
+  .left {
+    gap: 12px;
+  }
+
+  .left img,
+  .left [role='img'] {
+    width: 180px !important;
+    height: 180px !important;
+  }
+
+  .footer {
+    padding: 8px 16px 16px;
+  }
+
+  .leftControls {
+    display: none;
+  }
+}

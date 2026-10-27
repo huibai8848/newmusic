@@ -1,0 +1,346 @@
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+}
+
+.loading {
+  padding: 80px 0;
+  text-align: center;
+  color: #999;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.headInfo {
+  flex: 1;
+  min-width: 220px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.name {
+  margin: 0 !important;
+}
+
+.sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #888;
+  font-size: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.headerActions {
+  margin-left: auto;
+}
+
+.notice {
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chat {
+    height: 420px;
+  }
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.player {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+}
+
+.nowPlaying {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.songInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.songName {
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist {
+  color: #888;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.progressText {
+  display: flex;
+  justify-content: space-between;
+  color: #999;
+  font-size: 12px;
+}
+
+/* 弹幕浮层：绝对定位在播放卡片上，不拦截点击 */
+.danmakuLayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.danmakuItem {
+  position: absolute;
+  left: 100%;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  animation: danmakuMove 8s linear forwards;
+}
+
+.danmakuUser {
+  color: #ffd666;
+  margin-right: 4px;
+}
+
+@keyframes danmakuMove {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-160%);
+  }
+}
+
+.voteRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.voteText {
+  font-size: 12px;
+  color: #888;
+}
+
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px;
+  border-bottom: 1px solid #fafafa;
+}
+
+.rankNo {
+  width: 20px;
+  text-align: center;
+  font-weight: 600;
+  color: #999;
+}
+
+.rankName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.rankScore {
+  color: #fa8c16;
+  font-size: 12px;
+}
+
+.emojiRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 10px 10px;
+}
+
+.emojiBtn {
+  border: none;
+  background: #f7f7fa;
+  border-radius: 8px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1.4;
+  transition: background 0.2s;
+}
+
+.emojiBtn:hover {
+  background: #e8e8f0;
+}
+
+.mics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.mic {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: 10px;
+  background: #f7f7fa;
+}
+
+.micBusy {
+  background: #eef3ff;
+}
+
+.micName {
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.micPos {
+  font-size: 11px;
+  color: #999;
+}
+
+.offlineTag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.micQueue {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.queueIndex {
+  display: inline-block;
+  width: 22px;
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+}
+
+.queueSongLink {
+  cursor: pointer;
+  color: #1677ff;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 180px);
+  min-height: 420px;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  position: sticky;
+  top: 8px;
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+}
+
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message {
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.messageUser {
+  color: #888;
+}
+
+.selfMessage .messageUser {
+  color: #1677ff;
+}
+
+.systemMessage {
+  align-self: center;
+  color: #aaa;
+  font-size: 12px;
+  background: #f7f7f7;
+  border-radius: 10px;
+  padding: 2px 10px;
+}
+
+.danmaku {
+  color: #ff7a45;
+}
+
+.inputRow {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #f0f0f0;
+}

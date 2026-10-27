@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  模块 06 搜索的检索 SQL（只读，系分 D-44）。
+
+  ============================ 三条必须知道的约定 ============================
+
+  1) 【每一项都要 IFNULL】打分是一个连加式。MySQL 里 NULL 会顺着 + 和 * 传染：
+     `4 * (name_pinyin_first LIKE CONCAT(NULL,'%'))` 不是 0，而是 NULL，
+     于是整个 score 变成 NULL，而 `HAVING score > 0` 对 NULL 不成立——
+     **所有搜索结果会静默消失**。这不是理论风险，是本文件第一版实测踩到的坑。
+     所以规则是：凡是可能为 NULL 的项（拼音列、album_name、歌词、以及携带 NULL 的
+     pinyinKeyword 参数），一律用 IFNULL(..., 0) 包住。
+
+  2) 【含中文时不查拼音列】keyword 含非 ASCII 字符时，Java 侧把 pinyinKeyword 传成 NULL
+     （BR-15-014）。SQL 这边**不需要任何分支**：`LIKE CONCAT(NULL, '%')` 恒为 NULL，
+     被 IFNULL 收成 0。于是「拼音不影响中文检索的排序」这条规则由类型系统保证，
+     而不是靠某处记得写 if。
+
+  3) 【命中与得分不可能不一致】WHERE/HAVING 只判 `score > 0`，不重复写一遍匹配条件。
+     分开写迟早会出现「有分但没被选上」或「选上了但没分」——那种 bug 表现为
+     「结果里混进不相干的歌」，极其难查。
+
+  ============================ 打分（§4.2） ============================
+
+  权重照搬 PRD 的 ES 字段权重（name^5 / name.pinyin_first^4 / name.pinyin^3 /
+  artist_name^3 / album_name^2 / tags^2 / lyric^1），一个字都没改——**权重是业务语义，
+  不是引擎细节**，换的只是打分器（D-34）。多音字、分词这些引擎能力确实丢了，
+  登记在系分 §9。
+-->
+<mapper namespace="com.example.newmusic.module.search.mapper.SearchDocMapper">
+
+    <!-- ==================== 歌曲：打分表达式 ==================== -->
+    <sql id="songScore">
+        ( 5 * (s.name LIKE CONCAT('%', #{req.keyword}, '%'))
+        + IFNULL(4 * (s.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                      AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2), 0)
+        + IFNULL(3 * (s.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%')), 0)
+        + 3 * (s.artist_name LIKE CONCAT('%', #{req.keyword}, '%'))
+        + IFNULL(3 * (s.artist_name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%')), 0)
+        + IFNULL(2 * (s.album_name LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+        + IFNULL(2 * (EXISTS (SELECT 1 FROM t_song_tag st JOIN t_tag t ON t.id = st.tag_id
+                              WHERE st.song_id = s.id AND t.status = 1 AND t.deleted = 0
+                                AND t.name LIKE CONCAT('%', #{req.keyword}, '%'))), 0)
+        + IFNULL(1 * (ly.plain LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+        )
+    </sql>
+
+    <!--
+      歌词的 LRC 剥离（D-36）。库里的 t_lyric.content 是带时间轴的原文，
+      不剥离会有两个后果：搜「00」命中全部歌词，且高亮会高亮到时间戳上。
+
+      REGEXP_REPLACE(content, '\\[[^]]*\\]', '') 里的反斜杠是**故意双写**的：
+      MySQL 字符串字面量先解一层转义，正则引擎再看到 \[ 与 \]。
+      写成单反斜杠会让 ICU 正则解析出完全不同的东西（实测会剩下一串 ']'）。
+
+      用 LEFT JOIN LATERAL 而不是相关子查询：LATERAL 每行只算一次剥离结果，
+      而相关子查询要在打分项和片段项里各写一遍，就是两次逐行正则（§9 已登记该项为本模块
+      最容易被低估的性能点，能不翻倍就不翻倍）。
+    -->
+    <sql id="songLyricJoin">
+        LEFT JOIN LATERAL (
+            SELECT REGEXP_REPLACE(l.content, '\\[[^]]*\\]', '') AS plain
+            FROM t_lyric l
+            WHERE l.song_id = s.id AND l.deleted = 0
+            LIMIT 1
+        ) ly ON TRUE
+    </sql>
+
+    <sql id="songWhere">
+        WHERE s.deleted = 0
+          AND s.status = 1
+          AND s.audit_status = 1
+        <if test="!includeUnplayable">
+            AND s.copyright_status = 1
+        </if>
+        <if test="req.languages != null and req.languages.size() > 0">
+            AND s.language IN
+            <foreach collection="req.languages" item="lang" open="(" separator="," close=")">#{lang}</foreach>
+        </if>
+        <if test="req.genres != null and req.genres.size() > 0">
+            AND s.genre IN
+            <foreach collection="req.genres" item="g" open="(" separator="," close=")">#{g}</foreach>
+        </if>
+        <if test="req.eras != null and req.eras.size() > 0">
+            AND s.era IN
+            <foreach collection="req.eras" item="e" open="(" separator="," close=")">#{e}</foreach>
+        </if>
+        <if test="req.durations != null and req.durations.size() > 0">
+            AND (
+            <foreach collection="req.durations" item="d" separator=" OR ">
+                <choose>
+                    <when test="'lt3'.equals(d)">s.duration &lt; 180</when>
+                    <when test="'3to5'.equals(d)">s.duration BETWEEN 180 AND 300</when>
+                    <when test="'gt5'.equals(d)">s.duration &gt; 300</when>
+                    <!-- 未知取值判为「不匹配」而不是忽略：忽略会让 `duration=abc` 静默返回全集 -->
+                    <otherwise>1 = 0</otherwise>
+                </choose>
+            </foreach>
+            )
+        </if>
+    </sql>
+
+    <!-- 命中判定。必须在 HAVING 里：score 是 SELECT 的别名，
+         SQL 标准不允许在 WHERE 里引用别名（MySQL 只在 GROUP BY/HAVING/ORDER BY 放开） -->
+    <sql id="songHaving">
+        HAVING score &gt; 0
+        <if test="lyricOnly">
+            AND mt_lyric = 1
+        </if>
+    </sql>
+
+    <!--
+      游标续页条件，**与 songHaving 分开的理由是参数，不是 SQL 形状**。
+      countSongs 的签名里没有 pos（它要数的是「一共命中多少」，不是一个游标窗口有多大），
+      而 MyBatis 的 ParamMap.get() 在键不存在时是**抛异常**而不是返回 null，
+      所以 OGNL 求值 `pos != null` 本身就会炸：
+        BindingException: Parameter 'pos' not found. Available parameters are [req, ...]
+      这不是「条件判断成了 false」，是求值就失败了——因此不能靠 `<if>` 自己兜住，
+      只能让 countSongs 根本不 include 这段。
+      （反过来说，给 countSongs 补一个用不上的 pos=null 参数也能跑通，但那会留下一个
+       「传了 pos 总数就变成窗口大小」的静默错误，比现在的报错难查得多。）
+
+      它紧跟 songHaving 之后 include，emit 的是 `AND (...)`，因此仍然续在同一个 HAVING 子句里。
+    -->
+    <sql id="songCursor">
+        <if test="pos != null">
+            <choose>
+                <when test="'newest'.equals(sort)">
+                    AND (IFNULL(s.publish_time, '1970-01-01'), s.id)
+                        &lt; (#{pos.publishTime}, #{pos.id})
+                </when>
+                <when test="'duration_asc'.equals(sort)">
+                    AND (IFNULL(s.duration, 0), s.id) &gt; (#{pos.duration}, #{pos.id})
+                </when>
+                <when test="'duration_desc'.equals(sort)">
+                    AND (IFNULL(s.duration, 0), s.id) &lt; (#{pos.duration}, #{pos.id})
+                </when>
+                <!-- relevance 与 hot 都以 hot_score 为第二排序键，游标形状相同 -->
+                <otherwise>
+                    AND (score, s.hot_score, s.id) &lt; (#{pos.score}, #{pos.hotScore}, #{pos.id})
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <!--
+      排序（§4.3）。三个排序键里的 id 是**兜底且必需**的：没有它，hot_score 相同的行
+      顺序由存储引擎决定，游标分页会漏行或重行，而且响应不可复现（验收脚本会随机红）。
+    -->
+    <sql id="songOrder">
+        <choose>
+            <when test="'hot'.equals(sort)">s.hot_score DESC, s.id DESC</when>
+            <when test="'newest'.equals(sort)">IFNULL(s.publish_time, '1970-01-01') DESC, s.id DESC</when>
+            <when test="'duration_asc'.equals(sort)">IFNULL(s.duration, 0) ASC, s.id DESC</when>
+            <when test="'duration_desc'.equals(sort)">IFNULL(s.duration, 0) DESC, s.id DESC</when>
+            <otherwise>score DESC, s.hot_score DESC, s.id DESC</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="songFrom">
+        FROM t_song s
+        <include refid="songLyricJoin"/>
+    </sql>
+
+    <!-- 歌词命中标记。单独成一个片段，是为了让 countSongs 也能拿到它：
+         songHaving 里的 `AND mt_lyric = 1`（type=lyric 的过滤）是 WHERE 里放不下的，
+         只能留在 HAVING 里按别名引用，而 countSongs 的 SELECT 列表并没有 songColumns
+         （它只取 id 与 score）。没有这一列时，type=lyric 的计数查询会直接报
+         Unknown column 'mt_lyric' in 'having clause' —— 即「分类 Tab 的歌词页整页 500」。 -->
+    <sql id="songLyricFlag">
+        IFNULL(ly.plain LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_lyric
+    </sql>
+
+    <sql id="songColumns">
+        s.id, s.name, s.artist_id, s.artist_name, s.album_id, s.album_name, s.cover,
+        s.language, s.genre, s.era, s.duration, s.hot_score, s.copyright_status, s.publish_time,
+        IFNULL(s.name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_name,
+        IFNULL(s.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%'), 0) AS mt_name_pinyin,
+        IFNULL(s.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+               AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2, 0) AS mt_name_pinyin_first,
+        IFNULL(s.artist_name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_artist_name,
+        IFNULL(s.artist_name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%'), 0) AS mt_artist_name_pinyin,
+        IFNULL(s.album_name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_album_name,
+        IFNULL(EXISTS (SELECT 1 FROM t_song_tag st JOIN t_tag t ON t.id = st.tag_id
+                       WHERE st.song_id = s.id AND t.status = 1 AND t.deleted = 0
+                         AND t.name LIKE CONCAT('%', #{req.keyword}, '%')), 0) AS mt_tag,
+        <include refid="songLyricFlag"/>,
+        IF (ly.plain LIKE CONCAT('%', #{req.keyword}, '%'),
+            SUBSTRING(ly.plain,
+                      GREATEST(1, LOCATE(#{req.keyword}, ly.plain) - 30),
+                      CHAR_LENGTH(#{req.keyword}) + 60),
+            NULL) AS lyric_fragment
+    </sql>
+
+    <select id="searchSongs" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT
+        <include refid="songColumns"/>,
+        <include refid="songScore"/> AS score
+        <include refid="songFrom"/>
+        <include refid="songWhere"/>
+        <include refid="songHaving"/>
+        <include refid="songCursor"/>
+        ORDER BY
+        <include refid="songOrder"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 总数：把整段查询包成派生表再 COUNT。多一层派生表换来的是
+         「命中口径只有一处定义」——手写第二份字段列表迟早与主查询漂移。
+         注意这里 **不 include songCursor**：数的是全部命中，不是某一页之后还剩多少 -->
+    <select id="countSongs" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT s.id,
+            <include refid="songLyricFlag"/>,
+            <include refid="songScore"/> AS score
+            <include refid="songFrom"/>
+            <include refid="songWhere"/>
+            <include refid="songHaving"/>
+        ) c
+    </select>
+
+    <!-- ==================== 歌手 ====================
+         重量级（name^5 / pinyin_first^4 / pinyin^3）与歌曲保持一致，多一项
+         alias（别名/英文名）^2：搜「Jay」要能找到周杰伦，而 alias 正是存放它的列。
+         PRD 没有给歌手的字段权重表，此处按歌曲的同一套比例推得，登记在系分 §9。 -->
+    <select id="searchArtists" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT a.id, a.name, a.avatar AS cover, a.song_count, a.hot_score,
+               ( 5 * (a.name LIKE CONCAT('%', #{req.keyword}, '%'))
+               + IFNULL(4 * (a.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                             AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2), 0)
+               + IFNULL(3 * (a.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%')), 0)
+               + IFNULL(2 * (a.alias LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+               ) AS score,
+               <!-- 命中溯源列：表达式与上面的打分项逐字对应，改权重时两边一起改 -->
+               IFNULL(a.name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_name,
+               IFNULL(a.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%'), 0) AS mt_name_pinyin,
+               IFNULL(a.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                      AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2, 0) AS mt_name_pinyin_first,
+               IFNULL(a.alias LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_alias
+        FROM t_artist a
+        WHERE a.deleted = 0 AND a.status = 1
+        HAVING score &gt; 0
+        <if test="pos != null">
+            AND (score, a.hot_score, a.id) &lt; (#{pos.score}, #{pos.hotScore}, #{pos.id})
+        </if>
+        ORDER BY score DESC, a.hot_score DESC, a.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countArtists" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT a.id,
+                   ( 5 * (a.name LIKE CONCAT('%', #{req.keyword}, '%'))
+                   + IFNULL(4 * (a.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                                 AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2), 0)
+                   + IFNULL(3 * (a.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%')), 0)
+                   + IFNULL(2 * (a.alias LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+                   ) AS score
+            FROM t_artist a
+            WHERE a.deleted = 0 AND a.status = 1
+            HAVING score &gt; 0
+        ) c
+    </select>
+
+    <!-- ==================== 专辑 ====================
+         多一项 artist_name^2：搜歌手名应当能带出他的专辑。 -->
+    <select id="searchAlbums" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT al.id, al.name, al.cover, al.artist_id, al.artist_name, al.song_count,
+               al.publish_date AS publish_time, al.hot_score,
+               ( 5 * (al.name LIKE CONCAT('%', #{req.keyword}, '%'))
+               + IFNULL(4 * (al.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                             AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2), 0)
+               + IFNULL(3 * (al.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%')), 0)
+               + IFNULL(2 * (al.artist_name LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+               ) AS score,
+               <!-- 命中溯源列，与上面的打分项逐字对应 -->
+               IFNULL(al.name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_name,
+               IFNULL(al.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%'), 0) AS mt_name_pinyin,
+               IFNULL(al.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                      AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2, 0) AS mt_name_pinyin_first,
+               IFNULL(al.artist_name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_artist_name
+        FROM t_album al
+        WHERE al.deleted = 0 AND al.status = 1
+        HAVING score &gt; 0
+        <if test="pos != null">
+            AND (score, al.hot_score, al.id) &lt; (#{pos.score}, #{pos.hotScore}, #{pos.id})
+        </if>
+        ORDER BY score DESC, al.hot_score DESC, al.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAlbums" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT al.id,
+                   ( 5 * (al.name LIKE CONCAT('%', #{req.keyword}, '%'))
+                   + IFNULL(4 * (al.name_pinyin_first LIKE CONCAT(#{req.pinyinKeyword}, '%')
+                                 AND CHAR_LENGTH(#{req.pinyinKeyword}) &gt;= 2), 0)
+                   + IFNULL(3 * (al.name_pinyin LIKE CONCAT('%', #{req.pinyinKeyword}, '%')), 0)
+                   + IFNULL(2 * (al.artist_name LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+                   ) AS score
+            FROM t_album al
+            WHERE al.deleted = 0 AND al.status = 1
+            HAVING score &gt; 0
+        ) c
+    </select>
+
+    <!-- ==================== 歌单 ====================
+         只按 name 与 tags 匹配，**不做拼音**：PRD §6.2 的索引定义里歌单没有拼音字段
+         （D-35 照此不加列）。tags 是逗号分隔的字符串，用 LIKE 匹配是朴素但正确的做法，
+         代价是「POP」会命中「HIPPOP」——本轮接受，登记在系分 §9。 -->
+    <select id="searchPlaylists" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT p.id, p.name, p.cover, p.song_count, p.play_count, p.hot_score,
+               ( 5 * (p.name LIKE CONCAT('%', #{req.keyword}, '%'))
+               + IFNULL(2 * (p.tags LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+               ) AS score,
+               <!-- 命中溯源列，与上面的打分项逐字对应 -->
+               IFNULL(p.name LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_name,
+               IFNULL(p.tags LIKE CONCAT('%', #{req.keyword}, '%'), 0) AS mt_tag
+        FROM t_playlist p
+        WHERE p.deleted = 0 AND p.status = 1 AND p.is_public = 1 AND p.audit_status = 1
+        HAVING score &gt; 0
+        <if test="pos != null">
+            AND (score, p.hot_score, p.id) &lt; (#{pos.score}, #{pos.hotScore}, #{pos.id})
+        </if>
+        ORDER BY score DESC, p.hot_score DESC, p.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPlaylists" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT p.id,
+                   ( 5 * (p.name LIKE CONCAT('%', #{req.keyword}, '%'))
+                   + IFNULL(2 * (p.tags LIKE CONCAT('%', #{req.keyword}, '%')), 0)
+                   ) AS score
+            FROM t_playlist p
+            WHERE p.deleted = 0 AND p.status = 1 AND p.is_public = 1 AND p.audit_status = 1
+            HAVING score &gt; 0
+        ) c
+    </select>
+
+    <!-- ==================== 联想（§4.6） ====================
+         与主检索的三点不同：
+         ① **前缀**匹配（'kw%'）而不是包含（'%kw%'）——联想是补全，不是检索（BR-15-016）；
+         ② 首字母也要求 ≥2 字符（D-46，BR-15-012 的「完整词边界」）；
+         ③ 按 hot_score 排，**不按「相关性」**——前缀匹配下所有命中项的匹配强度相同，
+            这里没有「更相关」可言，让热度决定顺序才有意义。
+    -->
+    <select id="suggestArtists" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT a.id, a.name, a.avatar AS cover, a.song_count, a.hot_score
+        FROM t_artist a
+        WHERE a.deleted = 0 AND a.status = 1
+          AND ( a.name LIKE CONCAT(#{kw}, '%')
+             OR IFNULL(a.name_pinyin LIKE CONCAT(#{py}, '%'), 0) = 1
+             OR (IFNULL(a.name_pinyin_first LIKE CONCAT(#{py}, '%'), 0) = 1
+                 AND CHAR_LENGTH(#{py}) &gt;= 2) )
+        ORDER BY a.hot_score DESC, a.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="suggestSongs" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT s.id, s.name, s.artist_id, s.artist_name, s.cover, s.hot_score
+        FROM t_song s
+        WHERE s.deleted = 0 AND s.status = 1 AND s.audit_status = 1
+          AND s.copyright_status = 1
+          AND ( s.name LIKE CONCAT(#{kw}, '%')
+             OR IFNULL(s.name_pinyin LIKE CONCAT(#{py}, '%'), 0) = 1
+             OR (IFNULL(s.name_pinyin_first LIKE CONCAT(#{py}, '%'), 0) = 1
+                 AND CHAR_LENGTH(#{py}) &gt;= 2) )
+        ORDER BY s.hot_score DESC, s.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="suggestAlbums" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT al.id, al.name, al.cover, al.artist_name, al.song_count, al.hot_score
+        FROM t_album al
+        WHERE al.deleted = 0 AND al.status = 1
+          AND ( al.name LIKE CONCAT(#{kw}, '%')
+             OR IFNULL(al.name_pinyin LIKE CONCAT(#{py}, '%'), 0) = 1
+             OR (IFNULL(al.name_pinyin_first LIKE CONCAT(#{py}, '%'), 0) = 1
+                 AND CHAR_LENGTH(#{py}) &gt;= 2) )
+        ORDER BY al.hot_score DESC, al.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="suggestPlaylists" resultType="com.example.newmusic.module.search.mapper.SearchRow">
+        SELECT p.id, p.name, p.cover, p.song_count, p.play_count, p.hot_score
+        FROM t_playlist p
+        WHERE p.deleted = 0 AND p.status = 1 AND p.is_public = 1 AND p.audit_status = 1
+          AND p.name LIKE CONCAT(#{kw}, '%')
+        ORDER BY p.hot_score DESC, p.id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

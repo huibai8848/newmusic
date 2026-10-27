@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>newmusic</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>newmusic</name>
+    <description>MusicLive 在线音乐社交平台</description>
+    <properties>
+        <java.version>1.8</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <spring-boot.version>2.6.13</spring-boot.version>
+        <!-- Spring Boot 2.6.13 默认管理 Lombok 1.18.24，它在 JDK 21+ 的 javac 下会抛
+             NoSuchFieldError: JCTree$JCImport.qualid（JDK 21 把该字段类型改成了 JCFieldAccess）。
+             IDE 的项目 SDK 是 21，而 Maven 运行在 17，故显式升级到支持新 javac 的版本。
+             Lombok 1.18.30+ 仍支持 source/target 1.8。 -->
+        <lombok.version>1.18.46</lombok.version>
+        <!-- 依赖版本白名单：见 docs/PRD/03-系统总体架构.md 第 3 节 -->
+        <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
+        <druid.version>1.2.20</druid.version>
+        <hutool.version>5.8.22</hutool.version>
+        <jjwt.version>0.11.5</jjwt.version>
+        <knife4j.version>3.0.3</knife4j.version>
+        <redisson.version>3.17.7</redisson.version>
+        <!-- 模块 06 搜索的拼音支持。PRD 20（模块 11 IK 分词）在「假设 A-18 的备选方案」里
+             点名了 pinyin4j，故属于已登记依赖；PRD 15 首选的是 ES 的 analysis-pinyin 插件，
+             但本机没有 ES（系分 06 D-33），改为应用层物化拼音（D-35）。 -->
+        <pinyin4j.version>2.5.1</pinyin4j.version>
+        <!-- 模块 11 繁简转换。PRD 20 BR-20-042 推荐 OpenCC；opencc4j 是 OpenCC 的 Java 移植，
+             1.8.0 编译目标为 Java 7，与本项目 1.8 字节码兼容。 -->
+        <opencc4j.version>1.8.0</opencc4j.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- 持久层 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+            <version>${druid.version}</version>
+        </dependency>
+
+        <!-- 鉴权 -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- 工具 -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>${hutool.version}</version>
+        </dependency>
+        <!-- 模块 06：汉字转拼音。PRD 用 ES 的 analysis-pinyin 插件在索引期自动生成，
+             本机无 ES，故在应用层物化到列（系分 06 D-35）。324KB，无传递依赖。 -->
+        <dependency>
+            <groupId>com.belerweb</groupId>
+            <artifactId>pinyin4j</artifactId>
+            <version>${pinyin4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.houbb</groupId>
+            <artifactId>opencc4j</artifactId>
+            <version>${opencc4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- 接口文档 -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-spring-boot-starter</artifactId>
+            <version>${knife4j.version}</version>
+        </dependency>
+
+        <!--
+          健康检查。SecurityConfig 的 PermitAll 白名单、application.yml 的 management 块、
+          冒烟脚本三处都早已按「有 actuator」写好，唯独依赖没加，于是白名单指向一个 404 的
+          路径——冒烟脚本把它报出来了。只暴露 health，其余端点不开（NFR-S-058）。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!--
+          模块 04：原生 WebSocket（《03-系统总体架构》依赖白名单：spring-boot-starter-websocket，随 Boot）。
+          不引 STOMP/SockJS：PRD 假设 A-17 明确目标浏览器均原生支持 RFC 6455，
+          自定义 JSON 协议比 STOMP 更可控。RocketMQ 在依赖白名单里，但本机没有 Broker，
+          跨实例广播先由 Redis Pub/Sub 承载（系分 04 D-03），接口留在 WsClusterBus 一处。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!--
+          模块 03：缓存与并发控制（《03-系统总体架构》依赖白名单：Spring Data Redis + Lettuce / Redisson 3.17.7）
+          commons-pool2 供 Lettuce 连接池；caffeine 作一级本地缓存。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>${redisson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <configuration>
+                    <mainClass>com.example.newmusic.NewmusicApplication</mainClass>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

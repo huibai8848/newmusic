@@ -1,0 +1,26 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  :global(.ant-card-body) {
+    padding: 12px;
+  }
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  flex: none;
+}

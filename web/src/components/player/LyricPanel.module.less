@@ -1,0 +1,204 @@
+@import '../../styles/variables.less';
+
+/**
+ * 歌词面板（模块 07 T707）。
+ *
+ * 行高 36px 是**写死的常量**，与 LyricPanel.tsx 里的 `LINE_HEIGHT` 必须一致：
+ * 居中位置是用 JS 算 `translateY` 得到的，改这里不改那边就会整体偏移。
+ */
+@line-height: 36px;
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------- 跟随态（translateY） */
+
+.viewportFollow {
+  height: @line-height * 7;
+  overflow: hidden;
+  /* 上下淡出，让"进/出视口"更柔和；颜色走变量，暗色模式下自动跟随 */
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+
+.track {
+  transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+
+/* 用户手动滚动期间关掉过渡，否则拖不动（每次滚动都被动画拉回） */
+.viewportFollow:active .track {
+  transition: none;
+}
+
+/* ---------------------------------------------------------------- 只读 / 纯文本态（原生滚动） */
+
+.viewportScroll {
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.plainList {
+  padding: 4px 0;
+}
+
+/* ---------------------------------------------------------------- 行 */
+
+.line {
+  height: @line-height;
+  line-height: @line-height;
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s, transform 0.2s, font-size 0.2s;
+  transform-origin: center;
+}
+
+.lineActive {
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.linePast {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.lineClickable {
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.lineIntro {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- 双语：主行 + 副行叠在同一个 36px 行内 */
+
+/*
+ * 两行文字（原文 + 译文）必须塞进一行的高度：`translateY` 的居中算法依赖
+ * `LINE_HEIGHT` 固定，若把译文另起一行，整段歌词会整体偏移。
+ */
+.bilingual {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.bilingualMain,
+.bilingualSub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bilingualMain {
+  font-size: 14px;
+}
+
+.bilingualSub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.lineActive .bilingualMain {
+  font-size: 16px;
+}
+
+/* ---------------------------------------------------------------- 提示与浮层 */
+
+.note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  cursor: help;
+}
+
+.resumeBar {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+}
+
+/* ---------------------------------------------------------------- 无歌词兜底 */
+
+.empty {
+  height: @line-height * 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.emptySong {
+  opacity: 0.9;
+}
+
+.emptyName {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.emptyArtist {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ---------------------------------------------------------------- 变体：全屏页字号放大 */
+
+.full {
+  .line {
+    font-size: 17px;
+  }
+
+  .lineActive {
+    font-size: 20px;
+  }
+
+  .bilingualMain {
+    font-size: 16px;
+  }
+
+  .bilingualSub {
+    font-size: 13px;
+  }
+
+  .lineActive .bilingualMain {
+    font-size: 18px;
+  }
+
+  .viewportScroll {
+    max-height: 460px;
+  }
+}

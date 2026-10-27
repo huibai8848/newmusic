@@ -1,0 +1,72 @@
+20:25:18 [vite] http proxy error: /api/v1/admin/dashboard
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+20:25:19 [vite] http proxy error: /api/v1/admin/dashboard
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+20:40:43 [vite] http proxy error: /api/v1/admin/dashboard
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+20:40:45 [vite] http proxy error: /api/v1/admin/dashboard
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:29 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:29 [vite] http proxy error: /api/v1/admin/auth/me
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:29 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:30 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:30 [vite] http proxy error: /api/v1/admin/auth/me
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:30 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:30 [vite] http proxy error: /api/v1/admin/auth/me
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/me
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/me
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/captcha
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+23:14:32 [vite] http proxy error: /api/v1/admin/auth/me
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)

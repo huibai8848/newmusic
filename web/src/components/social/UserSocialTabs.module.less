@@ -1,0 +1,112 @@
+.collectLayout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.folderPane {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  height: fit-content;
+}
+
+.folderRow {
+  position: relative;
+}
+
+.folderName {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folderCount {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.folderActions {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: inherit;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.folderRow:hover .folderActions {
+  opacity: 1;
+}
+
+.collectMain {
+  min-width: 0;
+}
+
+.collectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.collectCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.collectInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.collectName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collectSub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.tabToolbar {
+  margin-bottom: 12px;
+}
+
+.reportBody {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.reportTime {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
